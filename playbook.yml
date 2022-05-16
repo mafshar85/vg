@@ -1,0 +1,53 @@
+---
+#playbook.yml
+ - name: 'provision Image'
+   hosts: default
+   become: true
+   gather_facts: false
+   vars:
+    username: test
+    userpass: test
+
+
+   tasks:
+    - name: ------copy script to /etc/init.d-----
+      copy:
+         src: ./scripts/bootstrap.sh
+         dest: /etc/init.d/bootstrap.sh
+         mode: '0555'
+      tags: set_shekan   
+    - name : -------add to .bashrc 4 started------
+      lineinfile:
+         path: ~/.bashrc
+         line: "sh /etc/init.d/bootstrap.sh"
+      tags: set_shekan
+    - name: -----Install firewalld, httpd, mysql-----
+      yum:
+        name: '{{item}}'
+        state: latest
+      loop:
+          - firewalld
+          - httpd
+          - mysql
+          - git
+    - name: -----start firewalld , httpd-------
+      service:
+        name: '{{item}}'
+        state: started
+        enabled: yes
+      loop:
+          - firewalld
+          - httpd
+    - name: FirewallD rules
+      firewalld:
+        permanent: yes
+        immediate: yes
+        service: "{{ item }}"
+        state: enabled
+      with_items:
+       - http
+       - https
+#    - name: -------pause for confirm commands runs on guest-------
+#     pause:
+#         minutes: 2
+
